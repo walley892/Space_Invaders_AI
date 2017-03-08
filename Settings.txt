@@ -1,7 +1,9 @@
 You can also play with Billy's parameters during the run.
 
-Epsilon: the probability that Billy will choose a random action instead of using his Q-function.
+Epsilon: the probability that Billy will choose a random action instead of using his Q-function. Double value in the range [0,1]
 
-Speed: the cooldown between in-run "turns." Note. the lower this value, the faster the simulation will run.
+Learning Rate: how quickly Billy learns. Double value in the range [0,1]
 
-Reward Attribution: This parameter will set the number of turns in the past that Billy will attribute his observed reward from executing an action at a given state.
+Speed: the cooldown between in-run "turns." Note. the lower this value, the faster the simulation will run. Integer value in the range [1,]
+
+Reward Attribution: This parameter will set the number of turns in the past that Billy will attribute his observed reward from executing an action at a given state. Integer value in the range [1,]
