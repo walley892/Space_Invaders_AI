@@ -19,7 +19,7 @@ public class SaveListener implements ActionListener{
 	}
 	@Override
 	public void actionPerformed(ActionEvent e) {
-	/*	switch(_p){
+		switch(_p){
 		case restore:
 			_robot.setRestorePath(_field.getText());
 			_robot.restore();
@@ -29,9 +29,9 @@ public class SaveListener implements ActionListener{
 			_robot.save();
 			break;
 		default:
-			break;*/
+			break;
 		
 		}
 	}
 
-
+}

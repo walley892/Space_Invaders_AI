@@ -7,8 +7,8 @@ package model;
 public class Player extends GameObject{
 	
 	public Player(Board b, int yPos, int xPos){
-		super(b);
 		setPosition(yPos, xPos);
+		_board = b;
 	}
 	
 	public OBJECT_TYPE getType() {
@@ -25,6 +25,6 @@ public class Player extends GameObject{
 	}
 	
 	public void fire(){
-		_board.fire(new Laser(DIRECTION.UP, this, _board));
+		_board.fire(new Laser(DIRECTION.UP, this));
 	}
 }

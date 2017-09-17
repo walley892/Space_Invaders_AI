@@ -2,62 +2,97 @@ package model;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Vector;
 
 
 
 public class RobotPlayer extends Player {
 
-	private class StateActionPair {
-		int[] state;
-		ACTION action;
-
-		StateActionPair(int[] s, ACTION a) {
-			state = s;
-			action = a;
-		}
-
-	}
 
 	private enum ACTION {
-		LEFT, RIGHT, FIRE
+		RIGHT, LEFT, FIRE
 	};
 
-	private double[][] _Q;
+	private double[] _W;
 	private boolean _needsRestoring, _needsSaving;
-	private double _epsilon;
-	private int _scorePrev;
-	private int _turns;
-	private double _learningRate;
-	private ArrayList<StateActionPair> _lastActions;
-	private int _attribution;
-	private String _restorePath;
-	private String _savePath;
-
-	public RobotPlayer(Board b, int yPos, int xPos) {
+	private ArrayList<Enemy> _enemies;
+	private int _nActions;
+	private double _lastScore;
+	private int _lastAction;
+	private double[] _lastState;
+	private float _lastReward;
+	private double[] _E;
+ 	public RobotPlayer(Board b, int yPos, int xPos) {
 		super(b, yPos, xPos);
-		_needsSaving = false;
-		_restorePath = "src\\model\\Q_Saved.q";
-		_savePath = "Q_Saved.q";
-		_attribution = 10;
-		_needsRestoring = true;
-		_lastActions = new ArrayList<StateActionPair>();
-		_turns = 0;
-		_scorePrev = 0;
-		_learningRate = 0.7;
-		_Q = new double[b.getWidth()][b.getWidth()];
-		for (int i = 0; i < _Q.length; ++i) {
-			for (int j = 0; j < _Q.length; ++j) {
-				if (i > 10)
-					_Q[i][j] = 1000;
-				else {
-					_Q[i][j] = -100000;
-				}
-			}
+		_enemies = (ArrayList<Enemy>) b.getEnemies().clone();
+		_nActions = 3;
+		_W = new double[_enemies.size()*2*_nActions];
+		
+		for(int i = 0; i < _W.length; ++i){
+			_W[i] = Math.random();
 		}
 	}
-
+	private double[] q(double[] state){
+		double[] q = new double[_nActions];
+		for(int i = 0; i < _nActions; ++i){
+			double[] actionState = getActionState(state, i);
+			q[i] = dot(actionState, _W);
+		}
+		return q;
+	}
+	private void qUpdate(double[] state, int action,double reward, double[] statePrime, double alpha){
+		double qOne = q(state)[action];
+		double[] qPrime = q(state);
+		double qTwo = qPrime[max(qPrime)];
+		state = getActionState(state,action);
+		for(int i = 0; i < _W.length; ++i){
+			_W[i] = _W[i] + alpha*(reward + 0.8*qTwo - qOne)*state[i];
+		}
+	}
+	private void sarsaUpdate(double[] state, int action, double reward, double[] statePrime, int actionPrime, double alpha){
+		double qOne = q(state)[action];
+		double qTwo = q(statePrime)[actionPrime];
+		state = getActionState(state, action);
+		for(int i = 0; i < _W.length; ++i){
+			_W[i] = _W[i] + alpha*(reward + 0.8*qTwo - qOne)*state[i];
+		}
+	}
+	
+	private double dot(double[] a, double[] b){
+		if(a.length != b.length){
+			throw new IllegalArgumentException();
+		}
+		double avg = 0;
+		
+		for(int i = 0; i < a.length; ++i){
+			avg += a[i]*b[i];
+		}
+		return avg;
+	}
+	private double[] getState(){
+		double[] state = new double[_enemies.size()*2];
+		ArrayList<Enemy> currentEnemies = _board.getEnemies();
+		for(int i = 0; i < _enemies.size()*2; i+=2){
+			Enemy e = _enemies.get(i/2);
+			if(currentEnemies.contains(e)){
+				int[] pos = e._position;
+				state[i] = (double)pos[0]/(double)_board.getHeight();
+				state[i+1] = (double)pos[1]/(double)_board.getWidth();
+			}
+		}
+		return state;
+	}
+	private double[] getActionState(double[] state, int action){
+		double[] actionState = new double[_enemies.size()*2*_nActions];
+		for(int i = 0; i < state.length; ++i){
+			int index = i + action*_enemies.size()*2;
+			actionState[index] = state[i];			
+		}
+		return actionState;
+	}
 	@Override
 	public OBJECT_TYPE getType() {
 		return GameObject.OBJECT_TYPE.PLAYER;
@@ -71,8 +106,6 @@ public class RobotPlayer extends Player {
 		if(_needsSaving){
 			save();
 		}
-		
-		
 		switch (chooseAction()) {
 		case FIRE:
 			fire();
@@ -86,62 +119,44 @@ public class RobotPlayer extends Player {
 		default:
 			break;
 		}
-		if (_turns % _attribution == 0)
-			updateQ();
 	}
-
-	private int[] nextState(int[] state, ACTION a) {
-		switch (a) {
-		case FIRE:
-			break;
-		case LEFT:
-			state[0] -= 1;
-			break;
-		case RIGHT:
-			state[0] += 1;
-			break;
-		default:
-			break;
-		}
-		return state;
-	}
-
-	private void updateQ() {
-		int reward = 0;
-		if (_board.getScore() == _scorePrev) {
-			reward = -100;
-		} else {
-			reward = _board.getScore() - _scorePrev;
-		}
-		for (StateActionPair a : _lastActions) {
-			try {
-				int[] stateNext = nextState(a.state, a.action);
-				double futureReward = reward(stateNext, maxAction(stateNext));
-				_Q[a.state[0]][a.state[1]] = _Q[a.state[0]][a.state[1]]
-						+ _learningRate * (reward + 0.8 * futureReward - _Q[a.state[0]][a.state[1]]);
-			} catch (Exception e) {
+	private int max(double[] q){
+		int max = 0;
+		for(int i = 0; i < q.length; ++i){
+			if(q[max] < q[i]){
+				max = i;
 			}
 		}
-		_lastActions.clear();
-		_scorePrev = _board.getScore();
+		return max;
 	}
-
-	private ACTION maxAction(int[] state) {
-		ACTION[] acts = { ACTION.LEFT, ACTION.RIGHT, ACTION.FIRE };
-		ACTION best = acts[1];
-		for (ACTION a : acts) {
-			if (reward(state, a) > reward(state, best)) {
-				best = a;
-			}
-		}
-		return best;
-	}
-
 	public ACTION chooseAction() {
-		ACTION act = qAction();
-		int[] state = { _position[1], averageEnemyPosition() };
-		_lastActions.add(new StateActionPair(state, act));
-		return act;
+		ACTION action;
+		if(_board.getScore() == _lastScore){
+			_lastReward = -0.75f;
+		}
+		if(_board.getScore() > _lastScore){
+			_lastReward = 0.5f;
+		}
+		if(_board.getScore() < _lastScore){
+			_lastReward = -1;
+		}
+		_lastScore = _board.getScore();
+		double[] state = getState();
+		double[] q = q(state);
+		if(Math.random()>(double)10000/(1+(double) (10000+_board.getTurn()))){
+			action = ACTION.values()[max(q)];
+			if(_board.getTurn() > 0){
+				//sarsaUpdate(_lastState, _lastAction, _lastReward, state, action.ordinal(), 0.1);//(double)10/((double)10+(double)_board.getTurn()));
+				qUpdate(_lastState, _lastAction, _lastReward, state, 0.1);
+			}
+		}else{
+			action = randomAction();
+		}
+		_lastAction = action.ordinal();
+		_lastState = state;
+		System.out.println(Arrays.toString(_W));
+		//System.out.println(_board.getTurn());
+		return action;
 	}
 
 	private ACTION randomAction() {
@@ -153,122 +168,15 @@ public class RobotPlayer extends Player {
 		else
 			return ACTION.FIRE;
 	}
-
-	private ACTION qAction() {
-		double ran = Math.random();
-		if (ran < 1 - _epsilon) {
-			int[] state = { _position[1], averageEnemyPosition() };
-			ACTION[] acts = { ACTION.LEFT, ACTION.RIGHT, ACTION.FIRE };
-			double[] rewards = new double[3];
-			for (int i = 0; i < 3; ++i) {
-				rewards[i] = reward(state, acts[i]);
-			}
-			double m = Math.random();
-			int max = 0;
-			if (m > 0.33) {
-				max = 1;
-			}
-			if (m > 0.66) {
-				max = 2;
-			}
-			for (int i = 0; i < 3; ++i) {
-				if (rewards[i] > rewards[max]) {
-					max = i;
-				}
-			}
-			return acts[max];
-		} else {
-			return randomAction();
-		}
+	public void reset(){
+		_enemies = (ArrayList<Enemy>) _board.getEnemies().clone();
 	}
-
-	private int averageEnemyPosition() {
-		ArrayList<Enemy> enemies = _board.getEnemies();
-		int xsum = 0;
-		for (Enemy e : enemies) {
-			xsum += e.getPosition()[1];
-		}
-		xsum = xsum / enemies.size();
-		return xsum;
-	}
-
-	private double reward(int[] state, ACTION action) {
-		try {
-			switch (action) {
-			case LEFT:
-				return _Q[state[0] - 1][state[1]];
-			case RIGHT:
-				return _Q[state[0] + 1][state[1]];
-			default:
-				return _Q[state[0]][state[1]];
-
-			}
-		} catch (IndexOutOfBoundsException e) {
-			return -10000;
-		}
-	}
-
-	public void setLearningRate(double d) {
-		_learningRate = d;
-	}
-
 	public void save() {
-		java.io.FileWriter f;
-		try {
-			f = new java.io.FileWriter(_savePath);
-			for (double[] line : _Q) {
-				f.write(Arrays.toString(line));
-				f.write("\n");
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		System.out.println("Save Complete");
-		_needsSaving = false;
+		
 	}
-
+	
 	public void restore() {
-		java.util.Scanner s;
-		try {
-			File f = new File(_restorePath);
-
-			s = new java.util.Scanner(f);
-			char c = 0;
-			String build = "";
-			double[] line = new double[_board.getWidth()];
-			int col = -1;
-			int row = -1;
-			while (s.hasNext()) {
-				String st = s.next();
-				for (int i = 0; i < st.length(); ++i) {
-					c = st.charAt(i);
-					switch (c) {
-					case '[':
-						break;
-					case ',':
-						line[++col] = Double.valueOf(build);
-						build = "";
-						break;
-					case ']':
-						line[++col] = Double.valueOf(build);
-						build = "";
-						_Q[++row] = line;
-						line = new double[_board.getWidth()];
-						col = -1;
-						break;
-					case '\n':
-						break;
-					default:
-						build = build + c;
-						break;
-					}
-				}
-			}
-		} catch (IOException e) {
-			System.out.println("No restore file found");
-		}
-		System.out.println("Restore Complete");
-		_needsRestoring = false;
+		
 	}
 	public void makeRestore() {
 		_needsRestoring = true;
@@ -277,17 +185,5 @@ public class RobotPlayer extends Player {
 		//Don't we all
 		_needsSaving = true;
 	}
-	public void setEpsilon(double val) {
-		_epsilon = val;
-	}
 
-	public void setAttribution(int val) {
-		_attribution = val;
-	}
-	public void setSavePath(String p){
-		_savePath = p;
-	}
-	public void setRestorePath(String p){
-		_restorePath = p;
-	}
 }

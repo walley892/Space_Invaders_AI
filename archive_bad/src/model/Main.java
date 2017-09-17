@@ -3,7 +3,7 @@ import view.GUI;
 import java.time.Instant;
 
 public class Main {
-	private static long COOLDOWN = 1;
+	private static long COOLDOWN = 10;
 	private static int gameMode;
 
 	public static void main(String[] args) throws InterruptedException {
@@ -21,9 +21,6 @@ public class Main {
 				nextUpdate = Instant.now().plusMillis(COOLDOWN);
 			}
 		}
-		
-		
-		
 	}
 	public static void setCooldown(long cooldown){
 		COOLDOWN = cooldown;

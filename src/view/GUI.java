@@ -41,30 +41,7 @@ public class GUI {
 		_screen.repaint();
 	}
 	protected void generateMenu(){
-		JMenuBar bar = new JMenuBar();
-		bar.setLayout(new GridLayout(0,1));
-		for(int i = 0; i < 4; ++i){
-			JTextField f = new JTextField();
-			JMenu m = new JMenu("Set " + RobotParameters.PARAMETER.values()[i]);
-			f.setText("Enter"+ RobotParameters.PARAMETER.values()[i] +"value");
-			f.addActionListener(new RobotParameters(RobotParameters.PARAMETER.values()[i], (RobotPlayer) _board.getPlayer(), f));
-			f.setEnabled(true);
-			m.add(f);
-			bar.add(new JMenuItem());
-			bar.add(m);
-		}
-		for(int i = 0; i < 2; ++i){
-			JTextField f = new JTextField();
-			JMenu m = new JMenu("" + SaveListener.PARAMETER.values()[i]);
-			f.setText("Specify "+SaveListener.PARAMETER.values()[i]+" path");
-			f.addActionListener(new SaveListener((RobotPlayer) _board.getPlayer(),SaveListener.PARAMETER.values()[i], f));
-			f.setEnabled(true);
-			m.add(f);
-			bar.add(new JMenuItem());
-			bar.add(m);
-		}
-		bar.setBackground(Color.WHITE);
-		_frame.add(bar);
+
 	}
 	
 }

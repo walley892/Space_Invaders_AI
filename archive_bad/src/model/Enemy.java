@@ -9,8 +9,8 @@ public class Enemy extends GameObject{
 	private int[] _startingPosition;
 	
 	public Enemy(Board b, int y, int x, int r){
-		super(b);
 		_round = r;
+		_board = b;
 		setPosition(y, x);
 		_direction = DIRECTION.RIGHT;
 		_startingPosition = new int[2];
@@ -24,7 +24,7 @@ public class Enemy extends GameObject{
 	@Override
 	public void move(){
 		if(Math.random() < .005){
-			_board.fire(new Laser(DIRECTION.DOWN, this, _board));
+			_board.fire(new Laser(DIRECTION.DOWN, this));
 		}
 		if((_position[1] > 20 + _startingPosition[1] || _position[1] < _startingPosition[1]) && _direction != DIRECTION.DOWN){
 			_direction = DIRECTION.DOWN;

@@ -22,7 +22,7 @@ public class RobotParameters implements ActionListener{
 	
 	@Override
 	public void actionPerformed(ActionEvent e) {
-	/*	try{
+		try{
 			_val = Double.valueOf(_field.getText());
 			if(_val < 0){
 				_field.setText("Paramter cannot be negative");
@@ -50,6 +50,6 @@ public class RobotParameters implements ActionListener{
 		
 		
 		}
-		_field.setText("Enter"+ _parameter +"value");*/
+		_field.setText("Enter"+ _parameter +"value");
 	}
 }

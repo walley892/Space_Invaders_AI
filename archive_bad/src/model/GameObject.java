@@ -7,15 +7,11 @@ public abstract class GameObject {
 	protected Board _board;
 	public abstract OBJECT_TYPE getType();
 	
-	public GameObject(Board b){
-		_board = b;
-	}
 	
 	protected void setPosition(int x, int y) {
 		_position = new int[2];
 		_position[0] = x;
 		_position[1] = y;
-	
 	}
 	
 	public int[] getPosition(){

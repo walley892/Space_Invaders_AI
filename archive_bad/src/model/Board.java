@@ -17,22 +17,19 @@ public class Board {
 	private ArrayList<Laser> _lasersToAdd;
 	private GameObject[][] _board;
 	private int _gameMode;
-	private int _turn;
 	
 	public Board(int gameMode){
 		_enemies = new ArrayList<Enemy>();
 		_gameMode = gameMode;
 		_score = 0;
 		_round = 1;
-		_turn = 0;
 		_nonPlayerObjects = new ArrayList<GameObject>();
 		_lasersToAdd = new ArrayList<Laser>();
-		placeEnemies();
 		if(gameMode ==0)
 			_player = new Player(this, _width -20, _height/2);
 		else
 			_player = new RobotPlayer(this, _height -20, _width/2);
-		
+		placeEnemies();
 		update();
 	}
 	
@@ -74,11 +71,9 @@ public class Board {
 		if(_enemies.size() == 0){
 			//++_round;
 			_player.setPosition(_height-20, _width/2);
-			
 			placeEnemies();
-			((RobotPlayer) _player).reset();
 		}
-		++_turn;
+		
 	}
 	
 	private void changeScore(int i) {
@@ -172,15 +167,12 @@ public class Board {
 	public ArrayList<Enemy> getEnemies(){
 		return _enemies;
 	}
-	
+
 	public int getWidth() {
 		return _width;
 	}
 	public int getHeight(){
 		return _height;
-	}
-	public int getTurn(){
-		return _turn;
 	}
 	
 }

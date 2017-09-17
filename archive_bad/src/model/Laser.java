@@ -4,8 +4,7 @@ public class Laser extends GameObject{
 	private DIRECTION _direction;
 	private GameObject _source;
 	
-	public Laser(DIRECTION d, GameObject source, Board b){
-		super(b);
+	public Laser(DIRECTION d, GameObject source){
 		_direction = d;
 		setPosition(source.getPosition()[0], source.getPosition()[1]);
 		_source = source;
